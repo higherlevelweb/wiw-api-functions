@@ -9,14 +9,48 @@
 
  //Require When I Work Config (Including and API Class)
 //include When I Work API Class
+require("wheniwork-api.php");
+$wiw = new Wheniwork($myLoginToken);
 
+//Retrieve all shifts from When I Work API and return results array
+function getShiftsListingResult(){
+	global $wiw;
+	//set Start and End Dates (adjusted 4 hour time zone)
+	date_default_timezone_set('AMERICA/TORONTO');
+	$startDate = date("Y-m-d G:i:s", strtotime(date("Y-m-d G:i:s")));
+	$endDate = date("Y-m-d G:i:s", strtotime($startDate . ' +90 days'));
+	//Make API request to retrieve all shifts from When I work
+	//Only including closed shifts
+	$listingShiftsResult = $wiw->get("shifts", array(
+		"include_open" => true,
+		"include_allopen"  => true,
+		"start" => $startDate,
+		"end" => $endDate
+	));
+	return $listingShiftsResult;
+}
+
+//Retrieve all job sites (clients) from When I Work API and return results array
+function getlistingJobSitesResult(){
+	global $wiw;
+	//Make API request to retrieve all job sites from When I work
+    $jobSitesResult = $wiw->get("sites");
+	return $jobSitesResult;
+}
+
+//Retrieve all users (employees) from When I Work API and return results array
+function getlistingUsersResult(){
+	global $wiw;
+	//Make API request to retrieve all job sites from When I work
+    $usersResult = $wiw->get("users");
+	return $usersResult;
+}
+
+//Generate shortcode content to display shift listing result
 function wiw_get_current_shifts($atts) {
-    require("wheniwork-api.php");
-    $wiw = new Wheniwork($myLoginToken);
-
 	$Content = '';
     //Get All Shifts from When I Work API
-	if ($listingShiftsResult = getShiftsListingResult($wiw)){
+	if ($listingShiftsResult = getShiftsListingResult()){
 		$shiftCount = 1;
 		$wiw_shift_ids = Array();
 		$wiw_duplicate_shifts = Array();
@@ -57,13 +91,10 @@ function wiw_get_current_shifts($atts) {
 }
 add_shortcode('wiw_current_shifts', 'wiw_get_current_shifts');
 
+//Generate shortcode content to display job sites (clients) listing result
 function wiw_get_job_sites($atts) {
-    //call to When I Work API login function
-    require("wheniwork-api.php");
-    $wiw = new Wheniwork($myLoginToken);
-
 	$Content = '';
-	if($listingJobSitesResult = getlistingJobSitesResult($wiw)){
+	if($listingJobSitesResult = getlistingJobSitesResult()){
 	    //Get All Shifts from When I Work API
 	    foreach ($listingJobSitesResult->sites as $site) {
        		$Content .= "<p>Client (Job Site) Count: " . $jobSiteCount . "<br />\n";
@@ -84,14 +115,11 @@ function wiw_get_job_sites($atts) {
 }
 add_shortcode('wiw_job_sites', 'wiw_get_job_sites');
 
+//Generate shortcode content to display users (employees) listing result
 function wiw_get_users($atts) {
-    //call to When I Work API login function
-    require("wheniwork-api.php");
-    $wiw = new Wheniwork($myLoginToken);
-
 	$Content = '';
     //Get All Shifts from When I Work API
-	if($listingUsersResult = getlistingUsersResult($wiw)){
+	if($listingUsersResult = getlistingUsersResult()){
 	    foreach ($listingUsersResult->users as $user) {
         	$Content .= "<p>User (Employee) Count: " . $userCount . "<br />\n";
         	$Content .= "Employee ID: " . $user->id . "<br />\n";
@@ -128,31 +156,3 @@ function wiw_get_users($atts) {
     return $Content;
 }
 add_shortcode('wiw_users', 'wiw_get_users');
-
-function getShiftsListingResult($wiw){
-	//set Start and End Dates (adjusted 4 hour time zone)
-	date_default_timezone_set('AMERICA/TORONTO');
-	$startDate = date("Y-m-d G:i:s", strtotime(date("Y-m-d G:i:s")));
-	$endDate = date("Y-m-d G:i:s", strtotime($startDate . ' +90 days'));
-	//Make API request to retrieve all shifts from When I work
-	//Only including closed shifts
-	$listingShiftsResult = $wiw->get("shifts", array(
-		"include_open" => true,
-		"include_allopen"  => true,
-		"start" => $startDate,
-		"end" => $endDate
-	));
-	return $listingShiftsResult;
-}
-
-function getlistingJobSitesResult($wiw){
-	//Make API request to retrieve all job sites from When I work
-    $jobSitesResult = $wiw->get("sites");
-	return $jobSitesResult;
-}
-
-function getlistingUsersResult($wiw){
-	//Make API request to retrieve all job sites from When I work
-    $usersResult = $wiw->get("users");
-	return $usersResult;
-}
